@@ -70,7 +70,29 @@ async def on_ready():
 event_group = app_commands.Group(name="events", description="Commands related to events")
 
 
+# Helper check: only allow users with the SA role (name or ID) defined in config.json
+async def _check_sa_role(interaction: discord.Interaction) -> bool:
+    sa_value = config.get("SARoleID")
+    if not sa_value:
+        raise app_commands.CheckFailure("SA role not configured on the bot.")
+    member = interaction.user
+    if not isinstance(member, discord.Member):
+        # not in a guild context
+        raise app_commands.CheckFailure("This command can only be used in a server.")
+    # try numeric id first, fallback to name
+    allowed = False
+    try:
+        sa_id = int(sa_value)
+        allowed = any(r.id == sa_id for r in member.roles)
+    except Exception:
+        allowed = any(r.name == str(sa_value) for r in member.roles)
+    if not allowed:
+        raise app_commands.CheckFailure("You must have the SA role to use this command.")
+    return True
+
+
 @event_group.command(name="create-event", description="Create a work thread")
+@app_commands.check(_check_sa_role)
 @app_commands.describe( 
     event_name = "Name of the event", 
     date="DD-MM-YYYY date of the event", 
@@ -187,6 +209,7 @@ async def create_event(
                 await interaction.followup.send(f"Failed to create discord event: {e}", ephemeral=True)
 
 @event_group.command(name="delete-work-thread", description="Delete the current channel if it is a work thread")
+@app_commands.check(_check_sa_role)
 async def delete_work_thread(interaction: discord.Interaction):
     "Delete the current channel if it is a work thread."
     channel = interaction.channel
@@ -195,6 +218,7 @@ async def delete_work_thread(interaction: discord.Interaction):
         await interaction.response.send_message(f"Work thread channel '{channel.name}' deleted.", ephemeral=True)
 
 @event_group.command(name="delete-all-thread", description="Delete all work threads for events older than today")
+@app_commands.check(_check_sa_role)
 async def delete_all_work_threads(interaction: discord.Interaction):
     """Delete all work thread channels for events older than today."""
     guild_obj = interaction.guild or bot.get_guild(int(GUILD_ID)) if GUILD_ID else None
@@ -219,8 +243,6 @@ async def delete_all_work_threads(interaction: discord.Interaction):
                 except ValueError:
                     print(f"Invalid date format in channel name: {channel.name}")
     await interaction.response.send_message(f"Deleted work thread channels:\n {',\n'.join(deleted_channels)}", ephemeral=True)
-
-
 
 bot.tree.add_command(event_group)  # register the group
 
