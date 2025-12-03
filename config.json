@@ -1,0 +1,23 @@
+{
+    "Commitees":[
+        "VastSex",
+        "Flint",
+        "SHV",
+        "Pust"
+    ],
+    "Places": [
+        "Gasquen",
+        "Decore",
+        "Polhem",
+        "Other"
+    ],
+    "event_types":[
+        "pub",
+        "party",
+        "meeting",
+        "seating"
+    ],
+    "ServerID": "1445750813518598176",
+    "WorkThreadCategoryID": "1445751215735574648",
+    "SARoleID": "1445752338903208026"
+}
